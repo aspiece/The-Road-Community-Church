@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Road Community Church — MERGE Youth Group Sunday Meal Sign-Ups</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f6f9ff;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --primary: #1f4dbd;
+      --primary-ink: #ffffff;
+      --accent: #f5b400;
+      --open: #10b981;
+      --taken: #e11d48;
+      --border: #e2e8f0;
+      --ring: #93c5fd
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Ubuntu
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: .02em;
+      color: var(--primary);
+      font-size: 14px;
+      text-transform: uppercase
+    }
+
+    .h-title {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -.02em
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 10px
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px
+    }
+
+    .card.claimed {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent)
+    }
+
+    .date {
+      font-weight: 800
+    }
+
+    .row {
+      display: flex;
+      gap: 8px
+    }
+
+    input[type=text] {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      background: var(--primary);
+      color: var(--primary-ink);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer
+    }
+
+    .btn[disabled] {
+      opacity: .6;
+      cursor: not-allowed
+    }
+
+    .btn:hover {
+      filter: brightness(.97)
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800
+    }
+
+    .pill-open {
+      background: var(--open);
+      color: #fff
+    }
+
+    .pill-taken {
+      background: var(--taken);
+      color: #fff
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .claimed-by {
+      display: none;
+      align-items: center;
+      gap: 6px
+    }
+
+    .card.claimed .claimed-by {
+      display: flex
+    }
+
+    .card.claimed .signup-row {
+      display: none
+    }
+
+    .err {
+      color: #b91c1c;
+      margin-top: 6px
+    }
+
+    footer {
+      margin: 28px 0;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center
+    }
+
+    .skel {
+      background: var(--surface);
+      height: 16px;
+      border-radius: 6px;
+      animation: pulse 1.2s infinite ease-in-out
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: .6
+      }
+
+      50% {
+        opacity: 1
+      }
+
+      100% {
+        opacity: .6
+      }
+    }
+  </style>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1tSs5pjJHffNNin7YnyGVDMfivUaWtISse-MA5oPICm0J7_DwBtHzU9wdYiG0vmjbhQ/exec";
+    const SCRIPT_URLS = [
+      SCRIPT_URL,
+      SCRIPT_URL.replace('script.google.com', 'script.googleusercontent.com')
+    ];
+    function jsonp(url) {
+      return new Promise((resolve, reject) => {
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        window[cb] = (data) => { resolve(data); cleanup(); };
+        function cleanup() { try { delete window[cb]; } catch (_) { } s.remove(); }
+        const s = document.createElement('script');
+        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+        s.onerror = () => { cleanup(); reject(new Error('JSONP load error')); };
+        document.head.appendChild(s);
+      });
+    }
+    function jsonpAny(pathWithQuery) {
+      return SCRIPT_URLS.reduce((p, base) => {
+        return p.catch(() => jsonp(base + pathWithQuery));
+      }, Promise.reject(new Error('JSONP init')));
+    }
+
+    const signupsP = jsonpAny("?action=list");
+    // Dynamically generate all Sundays from 2025-09-07 to 2026-12-27
+    const DATES = (() => {
+      const start = new Date("2025-09-07T00:00:00");
+      const end = new Date("2026-12-27T00:00:00");
+      const arr = [];
+      let d = new Date(start);
+      while (d <= end) {
+        const iso = d.toISOString().slice(0, 10);
+        const nice = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        arr.push({ iso, nice });
+        d.setDate(d.getDate() + 7);
+      }
+      return arr;
+    })();
+  </script>
+
+</head>
+
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="brand">The Road Community Church</div>
+      <div class="h-title">MERGE Youth Group — Sunday Meal Sign-Ups</div>
+      <div id="err" class="err"></div>
+      <div id="debug" class="meta"></div>
+    </header>
+
+    <section id="grid" class="grid">
+      <div class="card">
+        <div class="skel" style="width:40%"></div>
+        <div class="skel" style="width:70%"></div>
+      </div>
+      <div class="card">
+        <div class="skel" style="width:50%"></div>
+        <div class="skel" style="width:60%"></div>
+      </div>
+      <div class="card">
+        <div class="skel" style="width:35%"></div>
+        <div class="skel" style="width:65%"></div>
+      </div>
+    </section>
+
+    <footer>
+      The Road Community Church • MERGE Youth Group
+    </footer>
+  </main>
+
+  <script>
+    function cardHTML(d, takenName) {
+      const iso = d.iso;
+      const nice = d.nice;
+      const isTaken = !!takenName;
+      return `
+    <article class="card ${isTaken ? 'claimed' : ''}" data-iso="${iso}" aria-labelledby="d-${iso}">
+      <div id="d-${iso}" class="date">${nice}</div>
+      <div class="status" data-openrow="${iso}" style="${isTaken ? 'display:none' : ''}">
+        <span class="pill pill-open" data-pill="${iso}">OPEN</span>
+        <span class="meta" data-status="${iso}">Available</span>
+      </div>
+      <div class="claimed-by" data-claimed="${iso}" style="${isTaken ? 'display:flex' : 'display:none'}">
+        <span class="pill pill-taken">TAKEN</span>
+        <span class="meta">Taken by <strong data-who="${iso}">${takenName || ''}</strong></span>
+      </div>
+      <div class="signup-row row" style="${isTaken ? 'display:none' : ''}">
+        <input type="text" placeholder="Your name" aria-label="Your name for ${nice}" data-input-for="${iso}">
+        <button class="btn" data-signup-for="${iso}" data-nice="${nice}">Sign up</button>
+      </div>
+    </article>
+  `;
+    }
+
+    function setError(msg) {
+      const err = document.getElementById('err');
+      if (err) err.textContent = msg || '';
+    }
+
+    function renderGrid(signups) {
+      const byDate = new Map((signups || []).map(r => [String(r.date_iso).slice(0, 10), r.name]));
+      // Find upcoming Sunday (including today if today is Sunday)
+      const today = new Date();
+      const nextSunday = new Date(today);
+      const offset = (7 - today.getDay()) % 7; // 0 if Sunday, else days until Sunday
+      nextSunday.setDate(today.getDate() + offset);
+      nextSunday.setHours(0, 0, 0, 0);
+
+      // Only show dates starting from upcoming Sunday
+      const upcomingDates = DATES.filter(d => {
+        const di = new Date(d.iso + 'T00:00:00');
+        di.setHours(0, 0, 0, 0);
+        return di.getTime() >= nextSunday.getTime();
+      });
+
+      const html = upcomingDates.map(d => cardHTML(d, byDate.get(d.iso))).join('');
+      const grid = document.getElementById('grid');
+      grid.innerHTML = html;
+      const dbg = document.getElementById('debug');
+      if (dbg) dbg.textContent = 'Loaded ' + (signups ? signups.length : 0) + ' signup(s) • Starting from ' + nextSunday.toLocaleDateString() + ' • ' + new Date().toLocaleTimeString();
+    }
+
+    // Render as soon as signups arrive
+    signupsP.then(renderGrid).catch(err => {
+      console.error(err);
+      setError('⚠️ Cannot load signups. If you\'re using a school Google account in Chrome, try: (1) Open Chrome Settings → Switch to a personal profile or sign out of your school account, (2) Use a different browser, or (3) Use Incognito mode with a personal account.');
+      renderGrid([]);
+    });
+
+    async function submitSignup(form) {
+      try {
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body: form, mode: 'cors' });
+        if (res.ok || res.type === 'opaque') return true;
+      } catch (_) {
+        // Fall through to JSONP fallback.
+      }
+
+      const qs = new URLSearchParams(form);
+      const url = '?' + qs.toString();
+      const result = await jsonpAny(url);
+      if (result && result.ok === false) {
+        throw new Error(result.message || 'Signup failed');
+      }
+      return true;
+    }
+
+    async function signup(iso, nice) {
+      const input = document.querySelector(`[data-input-for="${iso}"]`);
+      const btn = document.querySelector(`[data-signup-for="${iso}"]`);
+      const name = (input?.value || '').trim();
+      if (!name) { alert("Please enter your name."); input?.focus(); return; }
+      btn?.classList.add('loading');
+      setError('');
+      try {
+        const form = new URLSearchParams();
+        form.set('action', 'signup');
+        form.set('date_iso', iso);
+        form.set('date_nice', nice);
+        form.set('name', name);
+        const ok = await submitSignup(form);
+        if (ok) {
+          // Hot-update card
+          const card = document.querySelector(`[data-iso="${iso}"]`);
+          if (card) {
+            card.classList.add('claimed');
+            const openRow = card.querySelector(`[data-openrow="${iso}"]`);
+            if (openRow) openRow.style.display = 'none';
+            const claimed = card.querySelector(`[data-claimed="${iso}"]`);
+            const who = card.querySelector(`[data-who="${iso}"]`);
+            if (claimed) claimed.style.display = 'flex';
+            if (who) who.textContent = name;
+            const btn2 = card.querySelector(`[data-signup-for="${iso}"]`);
+            const in2 = card.querySelector(`[data-input-for="${iso}"]`);
+            if (btn2) btn2.setAttribute('disabled', '');
+            if (in2) in2.setAttribute('disabled', '');
+          }
+          // Re-fetch in case of races
+          jsonpAny("?action=list").then(renderGrid);
+        }
+      } catch (e) {
+        console.error(e);
+        setError('⚠️ Signup failed. If you\'re using a school Google account, it may be blocking this page. Try: opening in Incognito mode, switching to a personal Chrome profile, or using a different browser.');
+        alert("Could not submit your signup. Please try again.");
+      } finally {
+        btn?.classList.remove('loading');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-signup-for]');
+      if (!btn) return;
+      const iso = btn.getAttribute('data-signup-for');
+      const nice = btn.getAttribute('data-nice');
+      signup(iso, nice);
+    });
+  </script>
+
+</body>
+
+</html>
