@@ -225,10 +225,10 @@
     }
 
     const signupsP = jsonpAny("?action=list");
-    // Dynamically generate all Sundays from 2025-09-07 to 2026-12-27
+    // Dynamically generate all Sundays from 2025-09-07 to 2027-12-26
     const DATES = (() => {
       const start = new Date("2025-09-07T00:00:00");
-      const end = new Date("2026-12-27T00:00:00");
+      const end = new Date("2027-12-26T00:00:00");
       const arr = [];
       let d = new Date(start);
       while (d <= end) {
