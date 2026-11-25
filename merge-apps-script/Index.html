@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>MERGE Meal Sign-Ups</title>
+  <style>
+    body { max-width: 760px; margin: auto; padding: 1.5rem; font-family: system-ui, sans-serif; color: #172b3a; }
+    h1 { font-size: 1.8rem; }
+    .card { border: 1px solid #d8e0e4; border-radius: .6rem; padding: 1rem; margin: 1rem 0; }
+    label { display: block; margin: .8rem 0 .25rem; font-weight: 600; }
+    input, select, button { font: inherit; padding: .6rem; max-width: 100%; }
+    input, select { width: 100%; box-sizing: border-box; }
+    button { margin: 1rem .5rem 0 0; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .6; }
+    #message { white-space: pre-wrap; }
+    .error { color: #a11; }
+    li { margin: .4rem 0; }
+  </style>
+</head>
+<body>
+  <h1>MERGE Youth Group Meal Sign-Ups</h1>
+  <p>Sign up to provide a Sunday meal. Only your first name will appear on the public list.</p>
+  <p id="message" role="status" aria-live="polite"></p>
+  <section class="card" id="signup">
+    <h2 id="form-title">Sign up</h2>
+    <form id="form">
+      <label for="date">Sunday</label>
+      <select id="date" required></select>
+      <label for="name">Your full name</label>
+      <input id="name" autocomplete="name" maxlength="120" required>
+      <label for="email">Email address</label>
+      <input id="email" type="email" autocomplete="email" maxlength="254" required>
+      <button id="submit" type="submit">Sign up</button>
+      <button id="cancel" type="button" hidden>Cancel my signup</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Upcoming signups</h2>
+    <ul id="signups"><li>Loading...</li></ul>
+  </section>
+  <script>
+    let token = '';
+    let currentDate = '';
+    let entries = [];
+    const form = document.getElementById('form');
+    const dateInput = document.getElementById('date');
+    const message = document.getElementById('message');
+    const submit = document.getElementById('submit');
+    const cancel = document.getElementById('cancel');
+
+    function showMessage(text, isError) {
+      message.textContent = text;
+      message.className = isError ? 'error' : '';
+    }
+
+    function busy(value) {
+      submit.disabled = value;
+      cancel.disabled = value;
+    }
+
+    function fail(error) {
+      busy(false);
+      showMessage(error.message || 'Something went wrong. Please try again.', true);
+    }
+
+    function niceDate(date) {
+      return new Date(date + 'T12:00:00Z').toLocaleDateString(undefined, {
+        timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+
+    function refresh() {
+      google.script.run.withSuccessHandler(function (data) {
+        entries = data;
+        const list = document.getElementById('signups');
+        list.textContent = '';
+        const todayParts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Detroit', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date());
+        const part = type => todayParts.find(item => item.type === type).value;
+        const today = part('year') + '-' + part('month') + '-' + part('day');
+        const taken = new Map(entries.map(entry => [entry.date_iso, entry.first_name]));
+        const selected = dateInput.value || currentDate;
+        dateInput.textContent = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = 'Choose a Sunday';
+        dateInput.appendChild(empty);
+        for (let d = new Date('2025-09-07T12:00:00Z');
+             d <= new Date('2027-12-26T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 7)) {
+          const date = d.toISOString().slice(0, 10);
+          if (date < today) continue;
+          const item = document.createElement('li');
+          item.textContent = niceDate(date) + ': ' + (taken.has(date) ? taken.get(date) : 'Open');
+          list.appendChild(item);
+          if (!taken.has(date) || date === currentDate) {
+            const option = document.createElement('option');
+            option.value = date;
+            option.textContent = niceDate(date);
+            dateInput.appendChild(option);
+          }
+        }
+        if (!list.children.length) {
+          const item = document.createElement('li');
+          item.textContent = 'No upcoming signup dates are available.';
+          list.appendChild(item);
+        }
+        dateInput.value = selected;
+        if (dateInput.selectedIndex < 0) dateInput.value = '';
+      }).withFailureHandler(fail).listSignups();
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      busy(true);
+      showMessage('', false);
+      const details = {
+        date: dateInput.value,
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value
+      };
+      if (token) {
+        google.script.run.withSuccessHandler(function (result) {
+          token = result.token;
+          currentDate = details.date;
+          google.script.history.replace(null, {}, 'manage=' + encodeURIComponent(token));
+          busy(false);
+          showMessage('Your signup was updated. Check your email for your new private management link.', false);
+          refresh();
+        }).withFailureHandler(fail).updateSignup(token, details);
+      } else {
+        google.script.run.withSuccessHandler(function () {
+          form.reset();
+          busy(false);
+          showMessage('Your signup is confirmed. Check your email for your private management link.', false);
+          refresh();
+        }).withFailureHandler(fail).createSignup(details);
+      }
+    });
+
+    cancel.addEventListener('click', function () {
+      if (!confirm('Cancel your meal signup?')) return;
+      busy(true);
+      google.script.run.withSuccessHandler(function (result) {
+        token = '';
+        currentDate = '';
+        google.script.history.replace(null, {}, '');
+        form.reset();
+        document.getElementById('form-title').textContent = 'Sign up';
+        submit.textContent = 'Sign up';
+        cancel.hidden = true;
+        busy(false);
+        showMessage(result.emailSent ? 'Your signup has been canceled. Check your email for confirmation.' :
+          'Your signup has been canceled, but we could not send a confirmation email.', !result.emailSent);
+        refresh();
+      }).withFailureHandler(fail).cancelSignup(token);
+    });
+
+    google.script.url.getLocation(function (location) {
+      const hash = new URLSearchParams(location.hash || '');
+      token = hash.get('manage') || '';
+      if (!token) {
+        refresh();
+        return;
+      }
+      busy(true);
+      google.script.run.withSuccessHandler(function (entry) {
+        currentDate = entry.date;
+        document.getElementById('name').value = entry.name;
+        document.getElementById('email').value = entry.email;
+        document.getElementById('form-title').textContent = 'Manage your signup';
+        submit.textContent = 'Save changes';
+        cancel.hidden = false;
+        busy(false);
+        refresh();
+      }).withFailureHandler(function (error) {
+        token = '';
+        google.script.history.replace(null, {}, '');
+        fail(error);
+        refresh();
+      }).getSignup(token);
+    });
+  </script>
+</body>
+</html>
