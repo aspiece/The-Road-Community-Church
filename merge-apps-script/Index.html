@@ -5,22 +5,43 @@
   <meta charset="utf-8">
   <title>MERGE Meal Sign-Ups</title>
   <style>
-    body { max-width: 760px; margin: auto; padding: 1.5rem; font-family: system-ui, sans-serif; color: #172b3a; }
-    h1 { font-size: 1.8rem; }
-    .card { border: 1px solid #d8e0e4; border-radius: .6rem; padding: 1rem; margin: 1rem 0; }
+    * { box-sizing: border-box; }
+    body {
+      max-width: 760px;
+      margin: auto;
+      padding: 24px;
+      background: #eaeaea;
+      color: #222;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    h1 { margin: 0; font-size: clamp(1.7rem, 5vw, 2.2rem); font-weight: 400; text-align: center; }
+    h1::after { content: ""; display: block; width: 52px; height: 3px; margin: 22px auto; background: #e75f28; }
+    .intro { color: #555; line-height: 1.6; text-align: center; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 2px; padding: 20px; margin: 1rem 0; }
+    .card h2 { margin-top: 0; }
     label { display: block; margin: .8rem 0 .25rem; font-weight: 600; }
-    input, select, button { font: inherit; padding: .6rem; max-width: 100%; }
-    input, select { width: 100%; box-sizing: border-box; }
-    button { margin: 1rem .5rem 0 0; cursor: pointer; }
+    input, select, button { font: inherit; padding: 12px; max-width: 100%; }
+    input, select { width: 100%; border: 1px solid #ddd; border-radius: 10px; }
+    button {
+      margin: 1rem .5rem 0 0;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: #a63e14;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(.97); }
     button:disabled { cursor: wait; opacity: .6; }
+    input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #9a380f; outline-offset: 3px; }
     #message { white-space: pre-wrap; }
-    .error { color: #a11; }
+    .error { color: #b91c1c; }
     li { margin: .4rem 0; }
   </style>
 </head>
 <body>
   <h1>MERGE Youth Group Meal Sign-Ups</h1>
-  <p>Sign up to provide a Sunday meal. Only your first name will appear on the public list.</p>
+  <p class="intro">Sign up to provide a Sunday meal. Only your first name will appear on the public list.</p>
   <p id="message" role="status" aria-live="polite"></p>
   <section class="card" id="signup">
     <h2 id="form-title">Sign up</h2>
