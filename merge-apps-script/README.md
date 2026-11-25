@@ -11,3 +11,7 @@ These files prepare a separate Google Apps Script web app for the existing signu
 7. Provide the new deployment URL to the site maintainer so the website can be switched over. Once the new site is working, deactivate the **old** deployment in **Deploy → Manage deployments**: its original public list returns full names. Until it is deactivated, first-name privacy is not complete.
 
 Existing signups remain in the sheet, but they have no email or management token. Manage those rows manually; they cannot receive reminders until a volunteer signs up again. Emails are sent from the account that deploys the app and are subject to Google Apps Script email quotas.
+
+## Updating the signup form
+
+After changing `Index.html`, copy its current contents into the Apps Script `Index` file and save. In **Deploy → Manage deployments**, edit the existing new web app deployment, choose **New version**, and deploy. This preserves the `/exec` URL and existing management links. To enable date selection from the calendar, deploy the version containing the `date` parameter handling.

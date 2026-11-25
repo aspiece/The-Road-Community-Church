@@ -25,8 +25,9 @@
   <section class="card" id="signup">
     <h2 id="form-title">Sign up</h2>
     <form id="form">
-      <label for="date">Sunday</label>
+      <label id="date-label" for="date">Sunday</label>
       <select id="date" required></select>
+      <p id="chosen-date" hidden></p>
       <label for="name">Your full name</label>
       <input id="name" autocomplete="name" maxlength="120" required>
       <label for="email">Email address</label>
@@ -42,6 +43,8 @@
   <script>
     let token = '';
     let currentDate = '';
+    let requestedDate = '';
+    let calendarDate = '';
     let entries = [];
     const form = document.getElementById('form');
     const dateInput = document.getElementById('date');
@@ -61,6 +64,7 @@
 
     function fail(error) {
       busy(false);
+      if (calendarDate && !dateInput.value) submit.disabled = true;
       showMessage(error.message || 'Something went wrong. Please try again.', true);
     }
 
@@ -81,7 +85,7 @@
         const part = type => todayParts.find(item => item.type === type).value;
         const today = part('year') + '-' + part('month') + '-' + part('day');
         const taken = new Map(entries.map(entry => [entry.date_iso, entry.first_name]));
-        const selected = dateInput.value || currentDate;
+        const selected = dateInput.value || currentDate || requestedDate;
         dateInput.textContent = '';
         const empty = document.createElement('option');
         empty.value = '';
@@ -107,7 +111,16 @@
           list.appendChild(item);
         }
         dateInput.value = selected;
-        if (dateInput.selectedIndex < 0) dateInput.value = '';
+        if (dateInput.selectedIndex < 0) {
+          dateInput.value = '';
+          if (calendarDate) {
+            submit.disabled = true;
+            showMessage('That Sunday is no longer available. Please close this window and choose another date.', true);
+          }
+        } else if (calendarDate) {
+          submit.disabled = false;
+        }
+        requestedDate = '';
       }).withFailureHandler(fail).listSignups();
     }
 
@@ -133,7 +146,11 @@
         google.script.run.withSuccessHandler(function () {
           form.reset();
           busy(false);
-          showMessage('Your signup is confirmed. Check your email for your private management link.', false);
+          if (calendarDate) {
+            form.hidden = true;
+            calendarDate = '';
+          }
+          showMessage('Your signup is confirmed. Check your email for your private management link. You may close this window to return to the calendar.', false);
           refresh();
         }).withFailureHandler(fail).createSignup(details);
       }
@@ -161,6 +178,17 @@
       const hash = new URLSearchParams(location.hash || '');
       token = hash.get('manage') || '';
       if (!token) {
+        requestedDate = (location.parameter && location.parameter.date) || '';
+        if (requestedDate) {
+          calendarDate = requestedDate;
+          dateInput.hidden = true;
+          document.getElementById('date-label').hidden = true;
+          const chosenDate = document.getElementById('chosen-date');
+          chosenDate.hidden = false;
+          chosenDate.textContent = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+            ? 'Sunday: ' + niceDate(requestedDate) : 'Invalid date';
+          submit.disabled = true;
+        }
         refresh();
         return;
       }
