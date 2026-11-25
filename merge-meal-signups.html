@@ -52,6 +52,25 @@
       margin-bottom: 12px
     }
 
+    .app-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px
+    }
+
+    .app-actions a {
+      font-weight: 700
+    }
+
+    .install-help {
+      width: 100%;
+      margin: 0;
+      text-align: right
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -249,13 +268,14 @@
 
 <body>
   <main class="container">
+    <div class="app-actions">
+      <a href="https://www.theroadcommunitychurch.com/">Church Website</a>
+      <button class="btn" type="button" id="install-app" aria-describedby="install-help">Install app</button>
+      <p id="install-help" class="meta install-help" role="status" aria-live="polite"></p>
+    </div>
     <header class="header page-intro">
       <h1>MERGE Youth Group — Sunday Meal Sign-Ups</h1>
       <p>Sign up to provide a Sunday meal for the youth group.</p>
-      <div>
-        <button class="btn" type="button" id="install-app" aria-describedby="install-help">Install app</button>
-        <p id="install-help" class="meta" role="status" aria-live="polite"></p>
-      </div>
       <div id="err" class="err"></div>
       <div id="debug" class="meta"></div>
     </header>
