@@ -258,7 +258,7 @@
     <header class="header page-intro">
       <h1>MERGE Youth Group — Sunday Meal Sign-Ups</h1>
       <p>Sign up to provide a Sunday meal for the youth group. To change or cancel a signup, use the private link in your confirmation email.</p>
-      <p><a class="btn" href="https://script.google.com/macros/s/AKfycbwm--s3Aa2t9gWW07J8bU4ACvU9bozMeA4C4iKV-XUyLvu2E-FSqA4THg-l1TtrFns6Wg/exec">Open signup form</a></p>
+      <p>Select an available Sunday to sign up.</p>
       <div id="err" class="err"></div>
       <div id="debug" class="meta"></div>
     </header>
@@ -339,6 +339,7 @@
         <span class="pill pill-taken">TAKEN</span>
         <span class="meta">Taken by <strong data-who="${iso}">${escapeHTML(takenName || '')}</strong></span>
       </div>
+      ${isTaken ? '' : `<a class="btn signup-link" href="${SCRIPT_URL}?date=${encodeURIComponent(iso)}" aria-label="Sign up for ${nice}">Sign up</a>`}
     </article>
   `;
     }
@@ -371,18 +372,38 @@
       if (dbg) dbg.textContent = 'Loaded ' + (signups ? signups.length : 0) + ' signup(s) • Starting from ' + nextSunday.toLocaleDateString() + ' • ' + new Date().toLocaleTimeString();
     }
 
+    let requestNumber = 0;
     function showSignups(request) {
+      const currentRequest = ++requestNumber;
       request.then(signups => {
+        if (currentRequest !== requestNumber) return;
         setError('');
         renderGrid(signups);
       }).catch(err => {
+        if (currentRequest !== requestNumber) return;
         console.error(err);
         document.getElementById('grid').textContent = '';
         document.getElementById('debug').textContent = '';
-        setError('Cannot load availability. Please try the signup form above or reload this page.');
+        setError('Cannot load availability. Please reload this page.');
       });
     }
     showSignups(signupsP);
+    let popupTimer;
+    document.getElementById('grid').addEventListener('click', event => {
+      const link = event.target.closest('a.signup-link');
+      if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const popup = window.open(link.href, 'merge-signup', 'popup,width=600,height=800');
+      if (!popup) return;
+      event.preventDefault();
+      popup.focus();
+      clearInterval(popupTimer);
+      popupTimer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupTimer);
+          showSignups(loadSignups());
+        }
+      }, 1000);
+    });
     window.addEventListener('pageshow', event => {
       if (event.persisted) showSignups(loadSignups());
     });
