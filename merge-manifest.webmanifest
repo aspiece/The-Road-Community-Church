@@ -1,0 +1,22 @@
+{
+  "name": "MERGE Meal Sign-Ups",
+  "short_name": "MERGE Meals",
+  "description": "Sign up to provide a Sunday meal for MERGE youth group.",
+  "start_url": "./merge-meal-signups.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eaeaea",
+  "theme_color": "#eaeaea",
+  "icons": [
+    {
+      "src": "assets/merge-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/merge-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The Road Community Church — MERGE Youth Group Sunday Meal Sign-Ups</title>
   <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/merge-icon-192.png">
+  <link rel="manifest" href="merge-manifest.webmanifest">
+  <meta name="theme-color" content="#eaeaea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MERGE Meals">
   <style>
     :root {
       --bg: #eaeaea;
@@ -108,6 +113,10 @@
       cursor: not-allowed
     }
 
+    .btn[hidden] {
+      display: none
+    }
+
     .btn:hover {
       filter: brightness(.97)
     }
@@ -191,6 +200,12 @@
   <link rel="stylesheet" href="site.css">
 
   <script>
+    let installPrompt = null;
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      installPrompt = event;
+    });
+
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1tSs5pjJHffNNin7YnyGVDMfivUaWtISse-MA5oPICm0J7_DwBtHzU9wdYiG0vmjbhQ/exec";
     const SCRIPT_URLS = [
       SCRIPT_URL,
@@ -233,21 +248,14 @@
 </head>
 
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="site-brand" href="./"><img src="assets/church-logo.png" alt="The Road Community Church"><span>Tools &amp; Resources</span></a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="./">Home</a>
-        <a href="merge-meal-signups.html" aria-current="page">Meal Sign-Ups</a>
-        <a href="Images/">Image Gallery</a>
-        <a class="church-link" href="https://www.theroadcommunitychurch.com/">Church Website</a>
-      </nav>
-    </div>
-  </header>
   <main class="container">
     <header class="header page-intro">
       <h1>MERGE Youth Group — Sunday Meal Sign-Ups</h1>
       <p>Sign up to provide a Sunday meal for the youth group.</p>
+      <div>
+        <button class="btn" type="button" id="install-app" aria-describedby="install-help">Install app</button>
+        <p id="install-help" class="meta" role="status" aria-live="polite"></p>
+      </div>
       <div id="err" class="err"></div>
       <div id="debug" class="meta"></div>
     </header>
@@ -273,6 +281,40 @@
   </main>
 
   <script>
+    const installButton = document.getElementById('install-app');
+    const installHelp = document.getElementById('install-help');
+    const installedDisplay = window.matchMedia('(display-mode: standalone)');
+    function updateInstallButton() {
+      installButton.hidden = installedDisplay.matches || window.navigator.standalone === true;
+    }
+    updateInstallButton();
+    window.addEventListener('appinstalled', () => {
+      installPrompt = null;
+      installButton.hidden = true;
+      installHelp.textContent = 'App installed.';
+    });
+    installButton.addEventListener('click', async () => {
+      if (installPrompt) {
+        const prompt = installPrompt;
+        installPrompt = null;
+        try {
+          await prompt.prompt();
+          const choice = await prompt.userChoice;
+          if (choice.outcome === 'dismissed') {
+            installHelp.textContent = 'Installation canceled. You can try again from your browser menu.';
+          }
+        } catch (error) {
+          console.error(error);
+          installHelp.textContent = 'Unable to open the install prompt. Try your browser menu instead.';
+        }
+      } else if (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        installHelp.textContent = 'In Safari, tap Share, then Add to Home Screen.';
+      } else {
+        installHelp.textContent = 'Open your browser menu and look for Install app or Add to Home screen. If unavailable, try a supported browser.';
+      }
+    });
+
     function cardHTML(d, takenName) {
       const iso = d.iso;
       const nice = d.nice;
