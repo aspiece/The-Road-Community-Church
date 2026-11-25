@@ -17,9 +17,12 @@ const data = [
 ];
 const properties = new Map([
   ['TOKEN_SECRET', 'a'.repeat(64)],
-  ['APP_URL', 'https://script.google.com/macros/s/test-deployment/exec']
+  ['APP_URL', 'https://script.google.com/macros/s/test-deployment/exec'],
+  ['COORDINATOR_EMAIL', 'coordinator@example.com']
 ]);
 const sent = [];
+const events = new Map();
+let calendarFails = false;
 let mailFails = false;
 let nextUuid = 0;
 const sheet = {
@@ -53,7 +56,7 @@ const context = {
   }) },
   PropertiesService: { getScriptProperties: () => scriptProperties },
   Utilities: {
-    getUuid: () => String(++nextUuid),
+    getUuid: () => String(++nextUuid).padStart(32, '0'),
     computeHmacSha256Signature: (value, key) => crypto.createHmac('sha256', key).update(value).digest(),
     base64EncodeWebSafe: bytes => Buffer.from(bytes).toString('base64url'),
     formatDate(date, timezone, format) {
@@ -70,6 +73,26 @@ const context = {
     MimeType: { JAVASCRIPT: 'javascript', JSON: 'json' },
     createTextOutput: text => ({ text, setMimeType(type) { this.type = type; return this; } })
   },
+  Calendar: { Events: {
+    get(calendar, id) {
+      if (calendarFails) throw new Error('Calendar unavailable');
+      if (!events.has(id)) throw new Error('404 Not Found');
+      return events.get(id);
+    },
+    insert(event, calendar, options) {
+      assert.equal(options.sendUpdates, 'all');
+      events.set(event.id, event);
+    },
+    patch(event, calendar, id, options) {
+      assert.equal(options.sendUpdates, 'all');
+      events.set(id, { ...event, id });
+    },
+    remove(calendar, id, options) {
+      assert.equal(options.sendUpdates, 'all');
+      if (calendarFails) throw new Error('Calendar unavailable');
+      if (!events.delete(id)) throw new Error('404 Not Found');
+    }
+  } },
   MailApp: {
     getRemainingDailyQuota: () => 100,
     sendEmail(email) {
@@ -92,7 +115,13 @@ assert.match(publicList, /^callback_1\(/);
 assert.doesNotMatch(publicList, /Legacy Person|email|timestamp/);
 assert.equal(context.doGet({ parameter: { action: 'list', callback: 'alert(1)' } }).text, 'Invalid callback');
 assert.match(context.doPost().text, /updated signup page/);
-context.createSignup({ date: '2026-11-29', name: 'Jane Smith', email: 'jane@example.com' });
+assert.equal(context.createSignup({ date: '2026-11-29', name: 'Jane Smith', email: 'jane@example.com' }).calendarSent, true);
+let event = [...events.values()][0];
+assert.equal(event.start.dateTime, '2026-11-29T17:45:00');
+assert.equal(event.end.dateTime, '2026-11-29T18:00:00');
+assert.equal(event.start.timeZone, 'America/Detroit');
+assert.deepEqual(Array.from(event.attendees, a => a.email), ['jane@example.com', 'coordinator@example.com']);
+assert.equal(event.guestsCanSeeOtherGuests, false);
 let token = tokenFromLastMail();
 assert.equal(context.getSignup(token).name, 'Jane Smith');
 assert.equal(context.listSignups()[1].first_name, 'Jane');
@@ -104,6 +133,10 @@ const updated = context.updateSignup(token, {
   date: '2026-12-13', name: 'Jane Jones', email: 'new@example.com'
 });
 assert.notEqual(updated.token, token);
+assert.equal(updated.calendarSent, true);
+event = [...events.values()][0];
+assert.equal(event.start.dateTime, '2026-12-13T17:45:00');
+assert.deepEqual(Array.from(event.attendees, a => a.email), ['new@example.com', 'coordinator@example.com']);
 assert.throws(() => context.getSignup(token), /invalid or has expired/);
 token = updated.token;
 assert.equal(context.getSignup(token).email, 'new@example.com');
@@ -119,7 +152,12 @@ assert.throws(() => context.createSignup({
   date: '2026-12-20', name: 'Other', email: 'o@example.com'
 }), /not saved/);
 mailFails = false;
+calendarFails = true;
+assert.throws(() => context.cancelSignup(token), /not canceled/);
+assert.equal(context.getSignup(token).date, '2026-12-13');
+calendarFails = false;
 assert.equal(context.cancelSignup(token).emailSent, true);
+assert.equal(events.size, 0);
 assert.throws(() => context.getSignup(token), /invalid or has expired/);
 assert.equal(data.length, 2);
 
@@ -130,4 +168,12 @@ const previous = sent.length;
 context.sendReminders_();
 context.sendReminders_();
 assert.equal(sent.length, previous + 1);
+TestDate.now = () => new realDate('2026-11-28T14:00:00Z').getTime();
+context.sendReminders_();
+context.sendReminders_();
+assert.equal(sent.length, previous + 2);
+
+calendarFails = true;
+assert.equal(context.createSignup({ date: '2026-12-20', name: 'Another Person', email: 'another@example.com' }).calendarSent, false);
+calendarFails = false;
 console.log('Apps Script signup, privacy, management, rollback, and reminder checks passed.');

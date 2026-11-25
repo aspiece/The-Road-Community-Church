@@ -160,18 +160,23 @@
           currentDate = details.date;
           google.script.history.replace(null, {}, 'manage=' + encodeURIComponent(token));
           busy(false);
-          showMessage('Your signup was updated. Check your email for your new private management link.', false);
+          showMessage('Your signup was updated. Check your email for your new private management link.' +
+            (result.calendarSent ? ' A calendar invitation was sent.' :
+              ' The calendar invitation could not be sent. Please contact the organizer.'), !result.calendarSent);
           refresh();
         }).withFailureHandler(fail).updateSignup(token, details);
       } else {
-        google.script.run.withSuccessHandler(function () {
+        google.script.run.withSuccessHandler(function (result) {
           form.reset();
           busy(false);
           if (calendarDate) {
             form.hidden = true;
             calendarDate = '';
           }
-          showMessage('Your signup is confirmed. Check your email for your private management link. You may close this window to return to the calendar.', false);
+          showMessage('Your signup is confirmed. Check your email for your private management link.' +
+            (result.calendarSent ? ' A calendar invitation was sent.' :
+              ' The calendar invitation could not be sent. Please contact the organizer.') +
+            ' You may close this window to return to the calendar.', !result.calendarSent);
           refresh();
         }).withFailureHandler(fail).createSignup(details);
       }

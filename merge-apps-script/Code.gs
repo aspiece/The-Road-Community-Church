@@ -1,7 +1,7 @@
 const TZ = 'America/Detroit';
 const SHEET_NAME = 'Sheet1';
 const LAST_SIGNUP_DATE = '2027-12-26';
-const HEADERS = ['date_iso', 'date_nice', 'name', 'timestamp', 'email', 'token_hash', 'reminder_for'];
+const HEADERS = ['date_iso', 'date_nice', 'name', 'timestamp', 'email', 'token_hash', 'reminder_for', 'calendar_event_id', 'day_before_reminder_for'];
 
 function doGet(e) {
   const action = String((e && e.parameter && e.parameter.action) || '').toLowerCase();
@@ -55,7 +55,7 @@ function sheet_() {
       }
     }
     if (headers.slice(4).join(',') !== HEADERS.slice(4).join(',')) {
-      sheet.getRange(1, 5, 1, 3).setValues([HEADERS.slice(4)]);
+      sheet.getRange(1, 5, 1, HEADERS.length - 4).setValues([HEADERS.slice(4)]);
     }
   }
   return sheet;
@@ -133,6 +133,66 @@ function dateNice_(date) {
   return Utilities.formatDate(new Date(date + 'T12:00:00Z'), 'UTC', 'EEEE, MMMM d, yyyy');
 }
 
+function calendarEvent_(entry, id) {
+  const coordinator = PropertiesService.getScriptProperties().getProperty('COORDINATOR_EMAIL');
+  if (!coordinator || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(coordinator)) {
+    throw new Error('Coordinator email is not configured.');
+  }
+  const attendees = [{ email: entry.email }];
+  if (coordinator.toLowerCase() !== entry.email.toLowerCase()) attendees.push({ email: coordinator });
+  return {
+    id,
+    summary: 'MERGE youth group meal',
+    description: 'Thank you for providing a meal for MERGE youth group.',
+    start: { dateTime: entry.date + 'T17:45:00', timeZone: TZ },
+    end: { dateTime: entry.date + 'T18:00:00', timeZone: TZ },
+    attendees,
+    guestsCanSeeOtherGuests: false,
+    visibility: 'private',
+    reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 1440 }] }
+  };
+}
+
+function calendarNotFound_(error) {
+  return /\b404\b|not found/i.test(String(error && error.message));
+}
+
+function syncCalendar_(entry, id) {
+  const event = calendarEvent_(entry, id);
+  try {
+    Calendar.Events.get('primary', id);
+  } catch (error) {
+    if (!calendarNotFound_(error)) throw error;
+    Calendar.Events.insert(event, 'primary', { sendUpdates: 'all' });
+    return;
+  }
+  delete event.id;
+  Calendar.Events.patch(event, 'primary', id, { sendUpdates: 'all' });
+}
+
+function removeCalendar_(id) {
+  if (!id) return;
+  try {
+    Calendar.Events.remove('primary', id, { sendUpdates: 'all' });
+  } catch (error) {
+    if (!calendarNotFound_(error)) throw error;
+  }
+}
+
+function authorizeCalendar() {
+  Calendar.Events.list('primary', { maxResults: 1 });
+}
+
+function sendCalendarInvite_(entry, id) {
+  try {
+    syncCalendar_(entry, id);
+    return true;
+  } catch (error) {
+    console.error('Calendar invitation failed for event ' + id, error);
+    return false;
+  }
+}
+
 function managementUrl_(token) {
   const url = PropertiesService.getScriptProperties().getProperty('APP_URL');
   if (!url || !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
@@ -198,8 +258,9 @@ function createSignup(details) {
       throw new Error('That date is already taken. Please choose another Sunday.');
     }
     const token = token_();
+    const eventId = Utilities.getUuid().replace(/-/g, '').toLowerCase();
     sheet.appendRow([entry.date, dateNice_(entry.date), entry.name, new Date(),
-      entry.email, tokenHash_(token), '']);
+      entry.email, tokenHash_(token), '', eventId, '']);
     const rowNumber = sheet.getLastRow();
     try {
       sendConfirmation_(entry, token);
@@ -208,7 +269,7 @@ function createSignup(details) {
       console.error(error);
       throw new Error('We could not send your confirmation email. Your signup was not saved; please try again.');
     }
-    return { ok: true };
+    return { ok: true, calendarSent: sendCalendarInvite_(entry, eventId) };
   });
 }
 
@@ -228,9 +289,10 @@ function updateSignup(token, details) {
       throw new Error('That date is already taken. Please choose another Sunday.');
     }
     const nextToken = token_();
+    const eventId = rows[index][7] || Utilities.getUuid().replace(/-/g, '').toLowerCase();
     const range = sheet.getRange(index + 2, 1, 1, HEADERS.length);
     range.setValues([[entry.date, dateNice_(entry.date), entry.name, new Date(),
-      entry.email, tokenHash_(nextToken), '']]);
+      entry.email, tokenHash_(nextToken), '', eventId, '']]);
     try {
       sendConfirmation_(entry, nextToken);
     } catch (error) {
@@ -238,7 +300,7 @@ function updateSignup(token, details) {
       console.error(error);
       throw new Error('We could not send the updated confirmation email. Your signup was not changed.');
     }
-    return { ok: true, token: nextToken };
+    return { ok: true, token: nextToken, calendarSent: sendCalendarInvite_(entry, eventId) };
   });
 }
 
@@ -248,6 +310,12 @@ function cancelSignup(token) {
     const rows = rows_(sheet);
     const index = findToken_(rows, token);
     const row = rows[index];
+    try {
+      removeCalendar_(row[7]);
+    } catch (error) {
+      console.error('Calendar cancellation failed for event ' + row[7], error);
+      throw new Error('We could not cancel the calendar invitation. Your signup was not canceled; please try again.');
+    }
     sheet.deleteRow(index + 2);
     try {
       MailApp.sendEmail({
@@ -266,19 +334,22 @@ function cancelSignup(token) {
 function sendReminders_() {
   withLock_(() => {
     const sheet = sheet_();
-    const target = Utilities.formatDate(
-      new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), TZ, 'yyyy-MM-dd'
-    );
+    const targets = [3, 1].map(days => Utilities.formatDate(
+      new Date(Date.now() + days * 24 * 60 * 60 * 1000), TZ, 'yyyy-MM-dd'
+    ));
     rows_(sheet).forEach((row, index) => {
-      if (fmtDate_(row[0]) !== target || !row[4] || !row[5] || row[6] === target) return;
+      const date = fmtDate_(row[0]);
+      const reminder = targets.indexOf(date);
+      if (reminder < 0 || !row[4] || !row[5] || row[reminder === 0 ? 6 : 8] === date) return;
       try {
         MailApp.sendEmail({
           to: String(row[4]),
           subject: 'Reminder: MERGE meal this Sunday',
-          body: 'Thank you for providing a MERGE meal on ' + dateNice_(target) +
-            '. Please use your confirmation email if you need to change or cancel your signup.'
+          body: 'Thank you for providing a MERGE meal on ' + dateNice_(date) +
+            ' from 5:45 to 6:00 PM Eastern.' +
+            ' Please use your confirmation email if you need to change or cancel your signup.'
         });
-        sheet.getRange(index + 2, 7).setValue(target);
+        sheet.getRange(index + 2, reminder === 0 ? 7 : 9).setValue(date);
       } catch (error) {
         console.error('Reminder failed for spreadsheet row ' + (index + 2), error);
       }
