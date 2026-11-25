@@ -7,18 +7,17 @@
   <title>The Road Community Church — MERGE Youth Group Sunday Meal Sign-Ups</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --surface: #f6f9ff;
+      --bg: #eaeaea;
+      --surface: #f5f5f5;
       --card: #ffffff;
-      --ink: #0f172a;
-      --muted: #475569;
-      --primary: #1f4dbd;
+      --ink: #222222;
+      --muted: #555555;
+      --primary: #a63e14;
       --primary-ink: #ffffff;
-      --accent: #f5b400;
-      --open: #10b981;
-      --taken: #e11d48;
-      --border: #e2e8f0;
-      --ring: #93c5fd
+      --open: #187151;
+      --taken: #a63e14;
+      --border: #dddddd;
+      --ring: #e75f28
     }
 
     * {
@@ -31,7 +30,7 @@
       padding: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Ubuntu
+      font-family: Arial, Helvetica, sans-serif
     }
 
     .container {
@@ -47,20 +46,6 @@
       margin-bottom: 12px
     }
 
-    .brand {
-      font-weight: 800;
-      letter-spacing: .02em;
-      color: var(--primary);
-      font-size: 14px;
-      text-transform: uppercase
-    }
-
-    .h-title {
-      font-size: clamp(26px, 4vw, 40px);
-      font-weight: 800;
-      letter-spacing: -.02em
-    }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -71,7 +56,7 @@
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 2px;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -89,11 +74,13 @@
 
     .row {
       display: flex;
-      gap: 8px
+      gap: 8px;
+      flex-wrap: wrap
     }
 
     input[type=text] {
       flex: 1;
+      min-width: 120px;
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -172,7 +159,7 @@
       margin-top: 6px
     }
 
-    footer {
+    .signup-footer {
       margin: 28px 0;
       color: var(--muted);
       font-size: 14px;
@@ -200,6 +187,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="site.css">
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1tSs5pjJHffNNin7YnyGVDMfivUaWtISse-MA5oPICm0J7_DwBtHzU9wdYiG0vmjbhQ/exec";
@@ -244,10 +232,21 @@
 </head>
 
 <body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="./">The Road <span>Community Church &middot; Resources</span></a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="./">Home</a>
+        <a href="merge-meal-signups.html" aria-current="page">Meal Sign-Ups</a>
+        <a href="Images/">Image Gallery</a>
+        <a class="church-link" href="https://www.theroadcommunitychurch.com/">Church Website</a>
+      </nav>
+    </div>
+  </header>
   <main class="container">
-    <header class="header">
-      <div class="brand">The Road Community Church</div>
-      <div class="h-title">MERGE Youth Group — Sunday Meal Sign-Ups</div>
+    <header class="header page-intro">
+      <h1>MERGE Youth Group — Sunday Meal Sign-Ups</h1>
+      <p>Sign up to provide a Sunday meal for the youth group.</p>
       <div id="err" class="err"></div>
       <div id="debug" class="meta"></div>
     </header>
@@ -267,7 +266,7 @@
       </div>
     </section>
 
-    <footer>
+    <footer class="signup-footer">
       The Road Community Church • MERGE Youth Group
     </footer>
   </main>

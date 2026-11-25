@@ -3,67 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Road Community Church</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: system-ui, sans-serif;
-      color: #172b3a;
-      background: #f5f7f8;
-    }
-    body { margin: 0; }
-    header { background: #172b3a; color: #fff; padding: 3rem 1rem; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    h1 { margin: 0 0 .75rem; font-size: clamp(2rem, 5vw, 3rem); }
-    header p { margin: 0; max-width: 40rem; font-size: 1.15rem; line-height: 1.6; }
-    main { padding: 2rem 1rem 3rem; }
-    h2 { margin-top: 0; }
-    .services, .resource {
-      background: #fff;
-      border: 1px solid #d8e0e4;
-      border-radius: .5rem;
-      padding: 1.25rem;
-    }
-    .services p { margin: .5rem 0; line-height: 1.5; }
-    .resources {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-      gap: 1rem;
-    }
-    .resource h3 { margin: 0 0 .5rem; }
-    .resource p { line-height: 1.5; }
-    .resource a { color: #164e73; font-weight: 700; }
-    .section-title { margin: 2rem 0 1rem; }
-  </style>
+  <title>Tools &amp; Resources | The Road Community Church</title>
+  <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <header>
-    <div class="container">
-      <h1>The Road Community Church</h1>
-      <p>Welcome! Join us for Sunday services and explore resources for our church community.</p>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="./">The Road <span>Community Church &middot; Resources</span></a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="./" aria-current="page">Home</a>
+        <a href="merge-meal-signups.html">Meal Sign-Ups</a>
+        <a href="Images/">Image Gallery</a>
+        <a class="church-link" href="https://www.theroadcommunitychurch.com/">Church Website</a>
+      </nav>
     </div>
   </header>
-  <main class="container">
-    <section class="services" aria-labelledby="services-title">
-      <h2 id="services-title">Sunday Services</h2>
-      <p>Join us at <strong>8:30 AM</strong> or <strong>10:45 AM</strong>.</p>
-      <p>The 10:45 AM service is also available by livestream.</p>
-    </section>
-    <section aria-labelledby="resources-title">
-      <h2 class="section-title" id="resources-title">Community Resources</h2>
-      <div class="resources">
-        <article class="resource">
-          <h3>MERGE Youth Group</h3>
-          <p>Sign up to provide a Sunday meal for the youth group.</p>
-          <a href="merge-meal-signups.html">View meal sign-ups</a>
-        </article>
-        <article class="resource">
-          <h3>Image Gallery</h3>
-          <p>Browse and open images shared by the church.</p>
-          <a href="Images/">Browse images</a>
-        </article>
-      </div>
-    </section>
+  <main class="site-main">
+    <div class="page-intro">
+      <h1>Church Tools &amp; Resources</h1>
+      <p>A place for The Road Community Church to access useful tools and shared resources.</p>
+    </div>
+    <div class="resource-grid">
+      <article class="resource-card">
+        <h2>MERGE Meal Sign-Ups</h2>
+        <p>Sign up to provide a Sunday meal for the MERGE youth group.</p>
+        <a href="merge-meal-signups.html">View meal sign-ups</a>
+      </article>
+      <article class="resource-card">
+        <h2>Image Gallery</h2>
+        <p>Browse and open images shared by the church.</p>
+        <a href="Images/">Browse images</a>
+      </article>
+    </div>
   </main>
+  <footer class="site-footer">The Road Community Church &middot; Tools &amp; Resources</footer>
 </body>
 </html>
