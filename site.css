@@ -28,19 +28,24 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   flex-wrap: wrap;
 }
 .site-brand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   color: #333;
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: .03em;
   text-decoration: none;
   text-transform: uppercase;
 }
-.site-brand span {
+.site-brand img {
   display: block;
-  margin-top: 3px;
+  width: 190px;
+  max-width: 100%;
+  height: auto;
+}
+.site-brand span {
   color: #666;
-  font-size: .68rem;
-  font-weight: 400;
+  font-size: .7rem;
+  font-weight: 700;
   letter-spacing: .08em;
 }
 .site-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 24px; }
